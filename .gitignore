@@ -1,0 +1,25 @@
+# nhost local dev
+.nhost
+.secrets
+
+# dependencies
+node_modules/
+**/node_modules/
+
+# env files 
+.env
+.env.local
+.env.*.local
+
+# frontend 
+frontend/.next/
+frontend/out/
+
+# logs
+*.log
+npm-debug.log*
+
+# OS/editor junk
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
