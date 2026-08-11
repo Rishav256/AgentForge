@@ -18,7 +18,10 @@ insert_permissions:
               _eq: owner
             user_id:
               _eq: X-Hasura-User-Id
-      columns: []
+      columns:
+        - org_id
+        - role
+        - user_id
     comment: ""
 select_permissions:
   - role: user
