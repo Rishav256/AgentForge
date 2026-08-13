@@ -16,3 +16,48 @@ array_relationships:
         table:
           name: workflows
           schema: public
+insert_permissions:
+  - role: user
+    permission:
+      check: {}
+      set:
+        created_by: x-hasura-User-Id
+      columns:
+        - name
+        - quota_limit
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - quota_limit
+        - quota_used
+        - name
+        - created_at
+        - quota_period_start
+        - created_by
+        - id
+      filter:
+        org_members:
+          user_id:
+            _eq: X-Hasura-User-Id
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - name
+        - quota_limit
+      filter:
+        org_members:
+          role:
+            _eq: owner
+          user_id:
+            _eq: X-Hasura-User-Id
+      check:
+        org_members:
+          role:
+            _eq: owner
+          user_id:
+            _eq: X-Hasura-User-Id
+    comment: ""
