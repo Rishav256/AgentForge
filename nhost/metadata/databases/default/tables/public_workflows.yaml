@@ -30,3 +30,71 @@ array_relationships:
         table:
           name: workflow_triggers
           schema: public
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        organization:
+          org_members:
+            role:
+              _in:
+                - owner
+                - editor
+            user_id:
+              _eq: X-Hasura-User-Id
+      set:
+        created_by: x-hasura-User-Id
+      columns:
+        - name
+        - org_id
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - name
+        - created_at
+        - created_by
+        - id
+        - org_id
+      filter:
+        organization:
+          org_members:
+            user_id:
+              _eq: X-Hasura-User-Id
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - name
+      filter:
+        organization:
+          org_members:
+            role:
+              _in:
+                - owner
+                - editor
+            user_id:
+              _eq: X-Hasura-User-Id
+      check:
+        organization:
+          org_members:
+            role:
+              _in:
+                - owner
+                - editor
+            user_id:
+              _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        organization:
+          org_members:
+            role:
+              _eq: owner
+            user_id:
+              _eq: X-Hasura-User-Id
+    comment: ""
