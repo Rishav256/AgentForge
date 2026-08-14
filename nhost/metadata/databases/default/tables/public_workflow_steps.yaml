@@ -13,3 +13,123 @@ array_relationships:
         table:
           name: step_runs
           schema: public
+insert_permissions:
+  - role: user
+    permission:
+      check:
+        _or:
+          - _and:
+              - type:
+                  _neq: db_write
+              - workflow:
+                  organization:
+                    org_members:
+                      role:
+                        _in:
+                          - owner
+                          - editor
+                      user_id:
+                        _eq: X-Hasura-User-Id
+          - _and:
+              - type:
+                  _eq: db_write
+              - workflow:
+                  organization:
+                    org_members:
+                      role:
+                        _eq: owner
+                      user_id:
+                        _eq: X-Hasura-User-Id
+      columns:
+        - config
+        - step_order
+        - type
+        - workflow_id
+    comment: ""
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - step_order
+        - config
+        - created_at
+        - type
+        - id
+        - workflow_id
+      filter:
+        workflow:
+          organization:
+            org_members:
+              user_id:
+                _eq: X-Hasura-User-Id
+    comment: ""
+update_permissions:
+  - role: user
+    permission:
+      columns:
+        - config
+        - step_order
+        - type
+      filter:
+        _or:
+          - _and:
+              - type:
+                  _neq: db_write
+              - workflow:
+                  organization:
+                    org_members:
+                      role:
+                        _in:
+                          - owner
+                          - editor
+                      user_id:
+                        _eq: X-Hasura-User-Id
+          - _and:
+              - type:
+                  _eq: db_write
+              - workflow:
+                  organization:
+                    org_members:
+                      role:
+                        _eq: owner
+                      user_id:
+                        _eq: X-Hasura-User-Id
+      check:
+        _or:
+          - _and:
+              - type:
+                  _neq: db_write
+              - workflow:
+                  organization:
+                    org_members:
+                      role:
+                        _in:
+                          - owner
+                          - editor
+                      user_id:
+                        _eq: X-Hasura-User-Id
+          - _and:
+              - type:
+                  _eq: db_write
+              - workflow:
+                  organization:
+                    org_members:
+                      role:
+                        _eq: owner
+                      user_id:
+                        _eq: X-Hasura-User-Id
+    comment: ""
+delete_permissions:
+  - role: user
+    permission:
+      filter:
+        workflow:
+          organization:
+            org_members:
+              role:
+                _in:
+                  - owner
+                  - editor
+              user_id:
+                _eq: X-Hasura-User-Id
+    comment: ""
