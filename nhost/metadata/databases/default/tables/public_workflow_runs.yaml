@@ -16,3 +16,22 @@ array_relationships:
         table:
           name: step_runs
           schema: public
+select_permissions:
+  - role: user
+    permission:
+      columns:
+        - completed_at
+        - created_at
+        - started_at
+        - status
+        - trigger_type
+        - id
+        - triggered_by
+        - workflow_id
+      filter:
+        workflow:
+          organization:
+            org_members:
+              user_id:
+                _eq: X-Hasura-User-Id
+    comment: ""
