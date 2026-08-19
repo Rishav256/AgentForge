@@ -1,0 +1,30 @@
+type Mutation {
+  approveStep(
+    input: ApproveStepInput!
+  ): ApproveStepOutput
+}
+
+type Mutation {
+  triggerWorkflowRun(
+    input: TriggerWorkflowRunInput!
+  ): TriggerWorkflowRunOutput
+}
+
+input TriggerWorkflowRunInput {
+  workflow_id: uuid!
+}
+
+input ApproveStepInput {
+  step_run_id: uuid!
+}
+
+type TriggerWorkflowRunOutput {
+  run_id: uuid!
+  status: String!
+}
+
+type ApproveStepOutput {
+  step_run_id: uuid!
+  status: String!
+}
+

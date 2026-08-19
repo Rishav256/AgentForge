@@ -1,5 +1,10 @@
 [global]
 
+[[global.environment]]
+name = "ACTION_BASE_URL"
+value = "https://local.functions.local.nhost.run/v1"
+
+
 [hasura]
 version = 'v2.48.10-ce'
 adminSecret = '{{ secrets.HASURA_GRAPHQL_ADMIN_SECRET }}'

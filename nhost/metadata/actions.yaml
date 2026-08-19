@@ -1,6 +1,26 @@
-actions: []
+actions:
+  - name: approveStep
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/approve-step'
+      timeout: 120
+    permissions:
+      - role: user
+    comment: Approves a paused approval_gate step (owner/editor only, checked in code against org membership), then resumes workflow execution from the next step.
+  - name: triggerWorkflowRun
+    definition:
+      kind: synchronous
+      handler: '{{ACTION_BASE_URL}}/trigger-workflow-run'
+      timeout: 120
+    permissions:
+      - role: user
+    comment: 'Triggers a workflow run: validates org membership + quota, creates a workflow_run row, and executes steps sequentially until completion, failure, or an approval_gate pause.'
 custom_types:
   enums: []
-  input_objects: []
-  objects: []
+  input_objects:
+    - name: TriggerWorkflowRunInput
+    - name: ApproveStepInput
+  objects:
+    - name: TriggerWorkflowRunOutput
+    - name: ApproveStepOutput
   scalars: []
