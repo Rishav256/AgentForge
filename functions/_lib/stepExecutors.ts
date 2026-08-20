@@ -141,6 +141,45 @@ async function executeHttpRequest(
   };
 }
 
+interface NotifyResult {
+  output: Record<string, any>;
+}
+
+async function executeNotify(
+  step: any,
+  context: { previousOutput: any },
+): Promise<NotifyResult> {
+  const { url, message } = step.config ?? {};
+
+  if (!url) {
+    throw new Error('notify step is missing required config field: url');
+  }
+  if (!message) {
+    throw new Error('notify step is missing required config field: message');
+  }
+
+  const interpolatedMessage = interpolate(message, context.previousOutput);
+
+  const httpStep = {
+    type: 'http_request',
+    config: {
+      url,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: { text: interpolatedMessage },
+    },
+  };
+
+  const result = await executeHttpRequest(httpStep, context);
+  return {
+    output: {
+      notified: true,
+      message: interpolatedMessage,
+      response: result.output,
+    },
+  };
+}
+
 export async function executeStep(
   step: any,
   context: { previousOutput: any },
@@ -153,7 +192,7 @@ export async function executeStep(
     case 'db_write':
       throw new Error('db_write executor not yet implemented');
     case 'notify':
-      throw new Error('notify executor not yet implemented');
+      return executeNotify(step, context);
     case 'conditional_branch':
       throw new Error('conditional_branch executor not yet implemented');
     default:
