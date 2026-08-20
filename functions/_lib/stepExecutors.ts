@@ -58,6 +58,89 @@ async function executeLlmCall(
   return { output: { text: content, model: json.model, usage: json.usage } };
 }
 
+interface HttpRequestResult {
+  output: Record<string, any>;
+}
+
+function interpolateDeep(value: any, previousOutput: any): any {
+  if (typeof value === 'string') return interpolate(value, previousOutput);
+  if (Array.isArray(value))
+    return value.map((v) => interpolateDeep(v, previousOutput));
+  if (value && typeof value === 'object') {
+    const result: Record<string, any> = {};
+    for (const key of Object.keys(value)) {
+      result[key] = interpolateDeep(value[key], previousOutput);
+    }
+    return result;
+  }
+  return value;
+}
+
+async function executeHttpRequest(
+  step: any,
+  context: { previousOutput: any },
+): Promise<HttpRequestResult> {
+  const { url, method, headers, body, timeoutMs } = step.config ?? {};
+
+  if (!url) {
+    throw new Error('http_request step is missing required config field: url');
+  }
+
+  const interpolatedUrl = interpolate(url, context.previousOutput);
+
+  let requestBody: string | undefined;
+  if (body !== undefined) {
+    const interpolatedBody = interpolateDeep(body, context.previousOutput);
+    requestBody =
+      typeof interpolatedBody === 'string'
+        ? interpolatedBody
+        : JSON.stringify(interpolatedBody);
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs ?? 10000);
+
+  let res: Response;
+  try {
+    res = await fetch(interpolatedUrl, {
+      method: method ?? 'GET',
+      headers: headers ?? {},
+      body: requestBody,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err.name === 'AbortError') {
+      throw new Error(`http_request timed out after ${timeoutMs ?? 10000}ms`);
+    }
+    throw new Error(`http_request failed: ${err.message}`);
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`http_request received ${res.status}: ${errBody}`);
+  }
+
+  const contentType = res.headers.get('content-type') ?? '';
+  const responseBody = contentType.includes('application/json')
+    ? await res.json()
+    : await res.text();
+
+  const responseHeaders: Record<string, string> = {};
+  res.headers.forEach((value, key) => {
+    responseHeaders[key] = value;
+  });
+
+  return {
+    output: {
+      status: res.status,
+      body: responseBody,
+      headers: responseHeaders,
+    },
+  };
+}
+
 export async function executeStep(
   step: any,
   context: { previousOutput: any },
@@ -66,7 +149,7 @@ export async function executeStep(
     case 'llm_call':
       return executeLlmCall(step, context);
     case 'http_request':
-      throw new Error('http_request executor not yet implemented');
+      return executeHttpRequest(step, context);
     case 'db_write':
       throw new Error('db_write executor not yet implemented');
     case 'notify':

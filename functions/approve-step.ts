@@ -8,6 +8,7 @@ const GET_STEP_RUN_CONTEXT = `
     step_runs_by_pk(id: $step_run_id) {
       id
       status
+      input
       workflow_step { step_order }
       workflow_run {
         id
@@ -81,6 +82,7 @@ export default async function handler(req: Request, res: Response) {
       workflowRunId: stepRun.workflow_run.id,
       orgId: stepRun.workflow_run.workflow.org_id,
       fromStepOrder: stepRun.workflow_step.step_order + 1,
+      previousOutput: stepRun.input,
     });
 
     res.status(200).json({ step_run_id: stepRunId, status: result.status });
