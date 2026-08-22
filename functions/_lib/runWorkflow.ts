@@ -118,7 +118,10 @@ export async function runWorkflowLoop(params: {
     while (attempt < 2 && !succeeded) {
       attempt++;
       try {
-        const result = await executeStep(step, { previousOutput });
+        const result = await executeStep(step, {
+          previousOutput,
+          workflowRunId,
+        });
         await adminGraphQL(UPDATE_STEP_RUN, {
           id: stepRun.id,
           status: 'succeeded',

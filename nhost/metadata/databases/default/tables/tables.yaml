@@ -15,6 +15,7 @@
 - "!include public_org_usage_summary.yaml"
 - "!include public_organizations.yaml"
 - "!include public_step_runs.yaml"
+- "!include public_workflow_outputs.yaml"
 - "!include public_workflow_runs.yaml"
 - "!include public_workflow_steps.yaml"
 - "!include public_workflow_triggers.yaml"

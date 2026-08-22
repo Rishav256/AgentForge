@@ -1,3 +1,4 @@
+import { adminGraphQL } from './hasura';
 interface StepExecutionResult {
   output: Record<string, any>;
   nextStepOrder?: number;
@@ -236,9 +237,49 @@ async function executeConditionalBranch(
   return result;
 }
 
+const INSERT_WORKFLOW_OUTPUT = `
+  mutation InsertWorkflowOutput($workflow_run_id: uuid!, $key: String!, $value: jsonb) {
+    insert_workflow_outputs_one(object: {
+      workflow_run_id: $workflow_run_id,
+      key: $key,
+      value: $value
+    }) { id }
+  }
+`;
+
+interface DbWriteResult {
+  output: Record<string, any>;
+}
+
+async function executeDbWrite(
+  step: any,
+  context: { previousOutput: any; workflowRunId: string },
+): Promise<DbWriteResult> {
+  const { key, value } = step.config ?? {};
+
+  if (!key) {
+    throw new Error('db_write step is missing required config field: key');
+  }
+
+  const interpolatedValue =
+    value === '{{previousOutput}}'
+      ? context.previousOutput
+      : interpolateDeep(value, context.previousOutput);
+
+  const result = await adminGraphQL<any>(INSERT_WORKFLOW_OUTPUT, {
+    workflow_run_id: context.workflowRunId,
+    key,
+    value: interpolatedValue,
+  });
+
+  return {
+    output: { written: true, id: result.insert_workflow_outputs_one.id, key },
+  };
+}
+
 export async function executeStep(
   step: any,
-  context: { previousOutput: any },
+  context: { previousOutput: any; workflowRunId: string },
 ): Promise<StepExecutionResult> {
   switch (step.type) {
     case 'llm_call':
@@ -246,7 +287,7 @@ export async function executeStep(
     case 'http_request':
       return executeHttpRequest(step, context);
     case 'db_write':
-      throw new Error('db_write executor not yet implemented');
+      return executeDbWrite(step, context);
     case 'notify':
       return executeNotify(step, context);
     case 'conditional_branch':
