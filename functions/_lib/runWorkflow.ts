@@ -82,7 +82,9 @@ export async function runWorkflowLoop(params: {
     workflow_steps: WorkflowStep[];
   }>(GET_STEPS_FROM, { workflow_id: workflowId, from_order: fromStepOrder });
 
-  for (const step of steps) {
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+
     if (step.type === 'approval_gate') {
       const { insert_step_runs_one } = await adminGraphQL<any>(
         CREATE_STEP_RUN,
@@ -111,6 +113,7 @@ export async function runWorkflowLoop(params: {
     let attempt = 0;
     let lastError: string | null = null;
     let succeeded = false;
+    let jumpTo: number | undefined;
 
     while (attempt < 2 && !succeeded) {
       attempt++;
@@ -124,6 +127,7 @@ export async function runWorkflowLoop(params: {
           attempt_count: attempt,
         });
         previousOutput = result.output;
+        jumpTo = result.nextStepOrder;
         succeeded = true;
       } catch (err: any) {
         lastError = err.message ?? String(err);
@@ -140,6 +144,19 @@ export async function runWorkflowLoop(params: {
       });
       await adminGraphQL(FAIL_RUN, { workflow_run_id: workflowRunId });
       return { status: 'failed', failedAtStep: step.id, error: lastError };
+    }
+
+    if (jumpTo != null) {
+      const targetIndex = steps.findIndex((s) => s.step_order === jumpTo);
+      if (targetIndex === -1) {
+        await adminGraphQL(FAIL_RUN, { workflow_run_id: workflowRunId });
+        return {
+          status: 'failed',
+          failedAtStep: step.id,
+          error: `conditional_branch target step_order ${jumpTo} not found`,
+        };
+      }
+      i = targetIndex - 1;
     }
   }
 

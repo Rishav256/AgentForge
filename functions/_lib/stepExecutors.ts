@@ -1,5 +1,6 @@
 interface StepExecutionResult {
   output: Record<string, any>;
+  nextStepOrder?: number;
 }
 
 function interpolate(template: string, previousOutput: any): string {
@@ -180,6 +181,61 @@ async function executeNotify(
   };
 }
 
+function getField(obj: any, path: string): any {
+  return path
+    .split('.')
+    .reduce((acc, key) => (acc == null ? undefined : acc[key]), obj);
+}
+
+function evaluateCondition(
+  fieldValue: any,
+  operator: string,
+  target: any,
+): boolean {
+  switch (operator) {
+    case 'equals':
+      return fieldValue === target;
+    case 'notEquals':
+      return fieldValue !== target;
+    case 'contains':
+      return (
+        typeof fieldValue === 'string' && fieldValue.includes(String(target))
+      );
+    case 'greaterThan':
+      return Number(fieldValue) > Number(target);
+    case 'lessThan':
+      return Number(fieldValue) < Number(target);
+    default:
+      throw new Error(`Unknown conditional_branch operator: ${operator}`);
+  }
+}
+
+async function executeConditionalBranch(
+  step: any,
+  context: { previousOutput: any },
+): Promise<StepExecutionResult> {
+  const { field, operator, value, jumpToStepOnFalse } = step.config ?? {};
+
+  if (!field || !operator) {
+    throw new Error(
+      'conditional_branch step requires config fields: field, operator',
+    );
+  }
+
+  const fieldValue = getField(context.previousOutput, field);
+  const conditionMet = evaluateCondition(fieldValue, operator, value);
+
+  const result: StepExecutionResult = {
+    output: { conditionMet, field, fieldValue, operator, value },
+  };
+
+  if (!conditionMet && jumpToStepOnFalse != null) {
+    result.nextStepOrder = jumpToStepOnFalse;
+  }
+
+  return result;
+}
+
 export async function executeStep(
   step: any,
   context: { previousOutput: any },
@@ -194,7 +250,7 @@ export async function executeStep(
     case 'notify':
       return executeNotify(step, context);
     case 'conditional_branch':
-      throw new Error('conditional_branch executor not yet implemented');
+      return executeConditionalBranch(step, context);
     default:
       throw new Error(`Unknown step type: ${step.type}`);
   }
